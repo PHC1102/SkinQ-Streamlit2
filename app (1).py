@@ -43,10 +43,7 @@ client = OpenAI(
 def call_gpt_oss(messages):
     try:
         completion = client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": "https://skinq-app2-f7etnqs3jnubmrwnsjqdrq.streamlit.app",
-                "X-Title": "SkinQ Chatbot",
-            },
+            extra_headers={},
             extra_body={},
             model="openai/gpt-oss-20b:free",
             messages=messages
