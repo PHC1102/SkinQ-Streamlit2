@@ -25,8 +25,8 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 def load_skin_disease_model():
     """Load dinov2-skindisease-finetuned model locally"""
     try:
-        processor = AutoImageProcessor.from_pretrained("dinov2-skindisease-finetuned")
-        model = AutoModelForImageClassification.from_pretrained("dinov2-skindisease-finetuned")
+        processor = AutoImageProcessor.from_pretrained("Jayanth2002/dinov2-base-finetuned-SkinDisease")
+        model = AutoModelForImageClassification.from_pretrained("Jayanth2002/dinov2-base-finetuned-SkinDisease")
         return processor, model
     except Exception as e:
         st.error(f"Không thể load model: {str(e)}")
