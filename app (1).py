@@ -37,7 +37,7 @@ def call_gpt_oss(messages):
      headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost",  # khi deploy thay bằng URL streamlit
+        "HTTP-Referer": "https://skinq-chatbot.streamlit.app",  # khi deploy thay bằng URL streamlit
         "X-Title": "SkinQ Chatbot"
     }
     
