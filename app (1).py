@@ -48,7 +48,7 @@ def call_gpt_oss(messages):
             temperature=0.7,
             max_tokens=1000,
             extra_headers={
-                "HTTP-Referer": "https://skinq-app2-f7etnqs3jnubmrwnsjqdrq.streamlit.app/",
+                "HTTP-Referer": "https://skinq-app2-f7etnqs3jnubmrwnsjqdrq.streamlit.app",
                 "X-Title": "SkinQ Chatbot",
             },
         )
