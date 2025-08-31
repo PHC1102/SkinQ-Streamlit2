@@ -43,16 +43,17 @@ client = OpenAI(
 def call_gpt_oss(messages):
     try:
         completion = client.chat.completions.create(
-            model="openai/gpt-oss-20b:free",   # nhớ đúng tên model
-            messages=messages,
-            temperature=0.7,
-            max_tokens=1000,
             extra_headers={
                 "HTTP-Referer": "https://skinq-app2-f7etnqs3jnubmrwnsjqdrq.streamlit.app",
                 "X-Title": "SkinQ Chatbot",
             },
+            extra_body={},
+            model="openai/gpt-oss-20b:free",
+            messages=messages
+            
         )
         return completion.choices[0].message.content
+        
     except Exception as e:
         return f"Lỗi khi gọi API: {str(e)}"
         
