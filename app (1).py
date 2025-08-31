@@ -32,29 +32,30 @@ def load_skin_disease_model():
         st.error(f"Không thể load model: {str(e)}")
         return None, None
 
+from openai import OpenAI
+
+# Tạo client OpenAI nhưng trỏ sang OpenRouter
+client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=OPENROUTER_API_KEY,
+)
+
 def call_gpt_oss(messages):
-    """Gọi GPT-OSS qua OpenRouter"""
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://skinq-app2-f7etnqs3jnubmrwnsjqdrq.streamlit.app/",  # khi deploy thay bằng URL streamlit
-        "X-Title": "SkinQ Chatbot"
-    }
-    
-    data = {
-        "model": "openai/gpt-oss-20b:free",   # tên chuẩn
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 1000
-    }
-    
     try:
-        response = requests.post(OPENROUTER_URL, headers=headers, json=data)
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        completion = client.chat.completions.create(
+            model="openai/gpt-oss-20b:free",   # nhớ đúng tên model
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1000,
+            extra_headers={
+                "HTTP-Referer": "https://skinq-app2-f7etnqs3jnubmrwnsjqdrq.streamlit.app/",
+                "X-Title": "SkinQ Chatbot",
+            },
+        )
+        return completion.choices[0].message.content
     except Exception as e:
         return f"Lỗi khi gọi API: {str(e)}"
-
+        
 def analyze_skin_image(image, processor, model):
     """Phân tích ảnh da liễu bằng model local"""
     try:
