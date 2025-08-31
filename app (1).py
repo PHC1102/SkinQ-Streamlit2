@@ -34,7 +34,7 @@ def load_skin_disease_model():
 
 def call_gpt_oss(messages):
     """Gọi GPT-OSS qua OpenRouter"""
-     headers = {
+    headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://skinq-chatbot.streamlit.app",  # khi deploy thay bằng URL streamlit
