@@ -1,0 +1,6 @@
+streamlit
+requests
+Pillow
+torch
+transformers
+numpy
