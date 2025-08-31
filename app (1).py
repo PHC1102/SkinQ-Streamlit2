@@ -25,8 +25,8 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 def load_skin_disease_model():
     """Load dinov2-skindisease-finetuned model locally"""
     try:
-        processor = AutoImageProcessor.from_pretrained("Jayanth2002/dinov2-base-finetuned-SkinDisease")
-        model = AutoModelForImageClassification.from_pretrained("Jayanth2002/dinov2-base-finetuned-SkinDisease")
+        processor = AutoImageProcessor.from_pretrained("dinov2-skindisease-finetuned")
+        model = AutoModelForImageClassification.from_pretrained("dinov2-skindisease-finetuned")
         return processor, model
     except Exception as e:
         st.error(f"Không thể load model: {str(e)}")
@@ -92,7 +92,7 @@ def format_diagnosis_prompt(predictions):
         confidence = pred['score'] * 100
         prompt += f"{i}. {disease}, độ tin cậy {confidence:.1f}%\n"
     
-    prompt += "\nGiải thích vì sao model có thể đưa ra dự đoán này dựa trên đặc điểm hình ảnh. Cũng như giải thích lí do độ tin cậy ở mức kia. Lưu ý: Đây chỉ là dự đoán của AI, không thay thế chẩn đoán y tế chuyên nghiệp."
+    prompt += "\nGiải thích vì sao model có thể đưa ra dự đoán này dựa trên đặc điểm hình ảnh. Lưu ý: Đây chỉ là dự đoán của AI, không thay thế chẩn đoán y tế chuyên nghiệp."
     
     return prompt
 
@@ -102,29 +102,18 @@ processor, model = load_skin_disease_model()
 # Khởi tạo session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "mode" not in st.session_state:
-    st.session_state.mode = "chat"
+if "show_diagnosis" not in st.session_state:
+    st.session_state.show_diagnosis = False
 
 # Header
 st.title("🩺 Medical Chatbot")
 st.markdown("---")
 
-# Mode selection
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.markdown("### Chế độ hoạt động:")
+# Nút chẩn đoán da liễu
+col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    mode = st.selectbox(
-        "Chọn chế độ:",
-        ["Chat thường", "Chẩn đoán da liễu"],
-        index=0 if st.session_state.mode == "chat" else 1,
-        key="mode_selector"
-    )
-    
-    if mode == "Chat thường":
-        st.session_state.mode = "chat"
-    else:
-        st.session_state.mode = "diagnosis"
+    if st.button("🔬 Chẩn đoán bệnh da liễu", type="primary", use_container_width=True):
+        st.session_state.show_diagnosis = True
 
 st.markdown("---")
 
@@ -138,38 +127,18 @@ with chat_container:
                 st.image(message["image"], width=300)
             st.markdown(message["content"])
 
-# Input area
-if st.session_state.mode == "chat":
-    # Chat thường
-    if prompt := st.chat_input("Nhập tin nhắn của bạn..."):
-        # Thêm tin nhắn user
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        
-        with st.chat_message("user"):
-            st.markdown(prompt)
-        
-        # Gọi GPT-OSS
-        with st.chat_message("assistant"):
-            with st.spinner("Đang suy nghĩ..."):
-                messages_for_api = [{"role": msg["role"], "content": msg["content"]} 
-                                  for msg in st.session_state.messages if "image" not in msg]
-                response = call_gpt_oss(messages_for_api)
-                st.markdown(response)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-
-else:
-    # Chế độ chẩn đoán da liễu - hiển thị như nút chức năng
+# Hiển thị upload ảnh nếu được kích hoạt
+if st.session_state.show_diagnosis:
     if processor is None or model is None:
         st.error("Model chưa được load thành công. Vui lòng kiểm tra lại.")
+        st.session_state.show_diagnosis = False
     else:
-        # Nút chẩn đoán với file uploader tích hợp
-        st.markdown("### 🔬 Chẩn đoán bệnh da liễu")
+        st.markdown("### 📷 Upload ảnh da liễu để chẩn đoán")
         
         uploaded_file = st.file_uploader(
-            "📷 Chọn ảnh da liễu để phân tích ngay lập tức:",
+            "Chọn ảnh (JPG, JPEG, PNG):",
             type=['jpg', 'jpeg', 'png'],
-            key="diagnosis_uploader",
-            help="Ảnh sẽ được phân tích tự động sau khi upload"
+            key="diagnosis_uploader"
         )
         
         # Tự động phân tích khi có ảnh upload
@@ -207,21 +176,39 @@ else:
                         st.error(error_msg)
                         st.session_state.messages.append({"role": "assistant", "content": error_msg})
             
-            # Reset file uploader để có thể upload ảnh mới
+            # Quay lại mode chat thường và reset
+            st.session_state.show_diagnosis = False
             st.rerun()
+
+# Chat input - luôn hiển thị (mặc định là chat thường)
+if prompt := st.chat_input("Nhập tin nhắn của bạn..."):
+    # Thêm tin nhắn user
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    
+    with st.chat_message("user"):
+        st.markdown(prompt)
+    
+    # Gọi GPT-OSS
+    with st.chat_message("assistant"):
+        with st.spinner("Đang suy nghĩ..."):
+            messages_for_api = [{"role": msg["role"], "content": msg["content"]} 
+                              for msg in st.session_state.messages if "image" not in msg]
+            response = call_gpt_oss(messages_for_api)
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
 
 # Sidebar với thông tin
 with st.sidebar:
     st.markdown("### ℹ️ Thông tin")
     st.markdown("""
-    **Chế độ Chat thường:**
-    - Chat với AI như bình thường
+    **💬 Chat thường:**
+    - Luôn sẵn sàng trò chuyện
     - Sử dụng GPT-OSS
     
-    **Chế độ Chẩn đoán:**
-    - Tải ảnh da liễu lên
-    - AI sẽ phân tích và đưa ra dự đoán
-    - Giải thích chi tiết từ chuyên gia AI
+    **🔬 Chẩn đoán da liễu:**
+    - Nhấn nút "Chẩn đoán bệnh da liễu"
+    - Upload ảnh → Tự động phân tích
+    - Quay lại chat thường sau khi xong
     
     ⚠️ **Lưu ý quan trọng:**
     Kết quả chỉ mang tính tham khảo, 
