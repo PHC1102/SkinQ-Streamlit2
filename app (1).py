@@ -25,8 +25,8 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 def load_skin_disease_model():
     """Load dinov2-skindisease-finetuned model locally"""
     try:
-        processor = AutoImageProcessor.from_pretrained("dinov2-skindisease-finetuned")
-        model = AutoModelForImageClassification.from_pretrained("dinov2-skindisease-finetuned")
+        processor = AutoImageProcessor.from_pretrained("Jayanth2002/dinov2-base-finetuned-SkinDisease")
+        model = AutoModelForImageClassification.from_pretrained("Jayanth2002/dinov2-base-finetuned-SkinDisease")
         return processor, model
     except Exception as e:
         st.error(f"Không thể load model: {str(e)}")
@@ -158,50 +158,57 @@ if st.session_state.mode == "chat":
                 st.session_state.messages.append({"role": "assistant", "content": response})
 
 else:
-    # Chế độ chẩn đoán da liễu
+    # Chế độ chẩn đoán da liễu - hiển thị như nút chức năng
     if processor is None or model is None:
         st.error("Model chưa được load thành công. Vui lòng kiểm tra lại.")
     else:
-        st.markdown("### 📷 Tải ảnh da liễu để chẩn đoán")
+        # Nút chẩn đoán với file uploader tích hợp
+        st.markdown("### 🔬 Chẩn đoán bệnh da liễu")
         
         uploaded_file = st.file_uploader(
-            "Chọn ảnh (JPG, JPEG, PNG):",
+            "📷 Chọn ảnh da liễu để phân tích ngay lập tức:",
             type=['jpg', 'jpeg', 'png'],
-            key="image_uploader"
+            key="diagnosis_uploader",
+            help="Ảnh sẽ được phân tích tự động sau khi upload"
         )
         
+        # Tự động phân tích khi có ảnh upload
         if uploaded_file is not None:
-            # Hiển thị ảnh
             image = Image.open(uploaded_file)
-            st.image(image, caption="Ảnh đã tải lên", width=400)
             
-            if st.button("🔍 Phân tích ảnh", type="primary"):
+            # Hiển thị ảnh đã upload trong chat
+            st.session_state.messages.append({
+                "role": "user", 
+                "content": "Tôi đã gửi ảnh da liễu để chẩn đoán",
+                "image": image
+            })
+            
+            with st.chat_message("user"):
+                st.image(image, width=300)
+                st.markdown("Tôi đã gửi ảnh da liễu để chẩn đoán")
+            
+            # Tự động phân tích ngay
+            with st.chat_message("assistant"):
                 with st.spinner("Đang phân tích ảnh..."):
                     # Phân tích ảnh với model local
                     predictions = analyze_skin_image(image, processor, model)
                     
                     if predictions:
-                        # Hiển thị ảnh trong chat
-                        st.session_state.messages.append({
-                            "role": "user", 
-                            "content": "Tôi đã gửi ảnh da liễu để chẩn đoán",
-                            "image": image
-                        })
-                        
-                        with st.chat_message("user"):
-                            st.image(image, width=300)
-                            st.markdown("Tôi đã gửi ảnh da liễu để chẩn đoán")
-                        
                         # Tạo prompt cho GPT-OSS
                         diagnosis_prompt = format_diagnosis_prompt(predictions)
                         
-                        # Gọi GPT-OSS với prompt chẩn đoán
-                        with st.chat_message("assistant"):
-                            with st.spinner("Đang phân tích và giải thích..."):
-                                messages_for_api = [{"role": "user", "content": diagnosis_prompt}]
-                                response = call_gpt_oss(messages_for_api)
-                                st.markdown(response)
-                                st.session_state.messages.append({"role": "assistant", "content": response})
+                        with st.spinner("Đang tạo báo cáo chẩn đoán..."):
+                            messages_for_api = [{"role": "user", "content": diagnosis_prompt}]
+                            response = call_gpt_oss(messages_for_api)
+                            st.markdown(response)
+                            st.session_state.messages.append({"role": "assistant", "content": response})
+                    else:
+                        error_msg = "Không thể phân tích ảnh này. Vui lòng thử ảnh khác."
+                        st.error(error_msg)
+                        st.session_state.messages.append({"role": "assistant", "content": error_msg})
+            
+            # Reset file uploader để có thể upload ảnh mới
+            st.rerun()
 
 # Sidebar với thông tin
 with st.sidebar:
