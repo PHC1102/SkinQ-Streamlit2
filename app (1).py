@@ -34,13 +34,15 @@ def load_skin_disease_model():
 
 def call_gpt_oss(messages):
     """Gọi GPT-OSS qua OpenRouter"""
-    headers = {
+     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost",  # khi deploy thay bằng URL streamlit
+        "X-Title": "SkinQ Chatbot"
     }
     
     data = {
-        "model": "gpt-oss",
+        "model": "openai/gpt-oss-20b:free",   # tên chuẩn
         "messages": messages,
         "temperature": 0.7,
         "max_tokens": 1000
